@@ -261,11 +261,11 @@ namespace Piranha.Repositories
         /// </summary>
         /// <param name="id">The comment id</param>
         /// <returns>The model</returns>
-        public Task<Models.Comment> GetCommentById(Guid id)
+        public async Task<Models.Comment> GetCommentById(Guid id)
         {
-            return _db.PageComments
+            return await _db.PageComments
                 .Where(c => c.Id == id)
-                .Select(c => new Models.Comment
+                .Select(c => new Models.PageComment
                 {
                     Id = c.Id,
                     ContentId = c.PageId,
@@ -276,7 +276,7 @@ namespace Piranha.Repositories
                     IsApproved = c.IsApproved,
                     Body = c.Body,
                     Created = c.Created
-                }).FirstOrDefaultAsync();
+                }).FirstOrDefaultAsync().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -390,7 +390,6 @@ namespace Piranha.Repositories
         {
             var model = await _db.Pages
                 .Include(p => p.Blocks).ThenInclude(b => b.Block).ThenInclude(b => b.Fields)
-                .Include(p => p.Fields)
                 .FirstOrDefaultAsync(p => p.Id == id)
                 .ConfigureAwait(false);
             var affected = new List<Guid>();
@@ -523,7 +522,7 @@ namespace Piranha.Repositories
 
             // Get the comments
             return await query
-                .Select(c => new Models.Comment
+                .Select(c => new Models.PageComment
                 {
                     Id = c.Id,
                     ContentId = c.PageId,
@@ -557,10 +556,14 @@ namespace Piranha.Repositories
                     pageQuery = pageQuery.AsNoTracking();
                 }
 
+                // FirstOrDefaultAsync(p => p.Id ...
+                pageQuery = pageQuery.OrderBy(p => p.Id);
+
                 var page = await pageQuery
                     .Include(p => p.Permissions)
                     .Include(p => p.Blocks).ThenInclude(b => b.Block).ThenInclude(b => b.Fields)
                     .Include(p => p.Fields)
+                    .AsSplitQuery()
                     .FirstOrDefaultAsync(p => p.Id == model.Id)
                     .ConfigureAwait(false);
 
@@ -905,11 +908,15 @@ namespace Piranha.Repositories
                 .AsNoTracking()
                 .Include(p => p.Permissions);
 
+            // FirstOrDefaultAsync(p => p.Id ...
+            query = query.OrderBy(p => p.Id);
+
             if (loadRelated)
             {
                 query = query
                     .Include(p => p.Blocks).ThenInclude(b => b.Block).ThenInclude(b => b.Fields)
-                    .Include(p => p.Fields);
+                    .Include(p => p.Fields)
+                    .AsSplitQuery();
             }
             return query;
         }

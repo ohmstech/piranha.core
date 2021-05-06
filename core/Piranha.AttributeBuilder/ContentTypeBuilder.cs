@@ -285,7 +285,8 @@ namespace Piranha.AttributeBuilder
                     Id = attr.Id,
                     Title = attr.Title,
                     CLRType = type.Name, // type.AssemblyQualifiedName,
-                    Icon = attr.Icon
+                    Icon = attr.Icon,
+                    IsHidden = attr.IsHidden
                 };
             }
             return null;
@@ -323,6 +324,7 @@ namespace Piranha.AttributeBuilder
                     Group = group.Id,
                     UseExcerpt = attr.UseExcerpt,
                     UsePrimaryImage = attr.UsePrimaryImage,
+                    UseBlocks = typeof(IBlockContent).IsAssignableFrom(type),
                     UseCategory = typeof(ICategorizedContent).IsAssignableFrom(type),
                     UseTags = typeof(ITaggedContent).IsAssignableFrom(type),
                     CustomEditors = GetEditors(type),
@@ -395,6 +397,13 @@ namespace Piranha.AttributeBuilder
                     }
                 }
 
+                // Add block types
+                var blockTypes = type.GetCustomAttributes<BlockItemTypeAttribute>();
+                foreach (var blockType in blockTypes)
+                {
+                    pageType.BlockItemTypes.Add(blockType.Type.FullName);
+                }
+
                 return pageType;
             }
             return null;
@@ -419,7 +428,7 @@ namespace Piranha.AttributeBuilder
                 }
 
                 // Create post type
-                return new PostType
+                var postType = new PostType
                 {
                     Id = attr.Id,
                     CLRType = type.GetTypeInfo().AssemblyQualifiedName,
@@ -431,6 +440,15 @@ namespace Piranha.AttributeBuilder
                     CustomEditors = GetEditors(type),
                     Regions = GetRegions(type)
                 };
+
+                // Add block types
+                var blockTypes = type.GetCustomAttributes<BlockItemTypeAttribute>();
+                foreach (var blockType in blockTypes)
+                {
+                    postType.BlockItemTypes.Add(blockType.Type.FullName);
+                }
+
+                return postType;
             }
             return null;
         }
@@ -525,12 +543,12 @@ namespace Piranha.AttributeBuilder
             return editors;
         }
 
-        private IList<RegionType> GetRegions(Type type)
+        private IList<ContentTypeRegion> GetRegions(Type type)
         {
-            var regions = new List<RegionType>();
+            var regions = new List<ContentTypeRegion>();
 
             // Get regions
-            var sortedRegions = new List<Tuple<int?, RegionType>>();
+            var sortedRegions = new List<Tuple<int?, ContentTypeRegion>>();
             foreach (var prop in type.GetProperties(App.PropertyBindings))
             {
                 var regionType = GetRegionType(prop);
@@ -552,7 +570,7 @@ namespace Piranha.AttributeBuilder
             return regions;
         }
 
-        private Tuple<int?, RegionType> GetRegionType(PropertyInfo prop)
+        private Tuple<int?, ContentTypeRegion> GetRegionType(PropertyInfo prop)
         {
             var attr = prop.GetCustomAttribute<RegionAttribute>();
 
@@ -560,7 +578,7 @@ namespace Piranha.AttributeBuilder
             {
                 var isCollection = typeof(IEnumerable).IsAssignableFrom(prop.PropertyType);
 
-                var regionType = new RegionType
+                var regionType = new ContentTypeRegion
                 {
                     Id = prop.Name,
                     Title = attr.Title,
@@ -569,7 +587,8 @@ namespace Piranha.AttributeBuilder
                     ListTitlePlaceholder = attr.ListPlaceholder,
                     ListExpand = attr.ListExpand,
                     Icon = attr.Icon,
-                    Display = attr.Display
+                    Display = attr.Display,
+                    Width = attr.Width
                 };
                 int? sortOrder = attr.SortOrder != Int32.MaxValue ? attr.SortOrder : (int?)null;
 
@@ -606,7 +625,7 @@ namespace Piranha.AttributeBuilder
                             return null;
                     }
 
-                    regionType.Fields.Add(new FieldType
+                    regionType.Fields.Add(new ContentTypeField
                     {
                         Id = "Default",
                         Type = appFieldType.TypeName
@@ -627,12 +646,12 @@ namespace Piranha.AttributeBuilder
                         return null;
                     }
                 }
-                return new Tuple<int?, RegionType>(sortOrder, regionType);
+                return new Tuple<int?, ContentTypeRegion>(sortOrder, regionType);
             }
             return null;
         }
 
-        private FieldType GetFieldType(PropertyInfo prop)
+        private ContentTypeField GetFieldType(PropertyInfo prop)
         {
             var attr = prop.GetCustomAttribute<FieldAttribute>();
 
@@ -649,7 +668,7 @@ namespace Piranha.AttributeBuilder
 
                 if (appFieldType != null)
                 {
-                    var fieldType = new FieldType
+                    var fieldType = new ContentTypeField
                     {
                         Id = prop.Name,
                         Title = attr.Title,
@@ -664,6 +683,10 @@ namespace Piranha.AttributeBuilder
                     {
                         fieldType.Description = descAttr.Text;
                     }
+
+                    // Get optional settings
+                    fieldType.Settings = Utils.GetFieldSettings(prop);
+
                     return fieldType;
                 }
             }

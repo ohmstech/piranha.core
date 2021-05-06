@@ -11,7 +11,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Reflection;
 using System.Threading.Tasks;
 using Piranha.Models;
 using Piranha.Repositories;
@@ -171,6 +170,48 @@ namespace Piranha.Services
                 return model;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Gets all available categories for the specified group.
+        /// </summary>
+        /// <param name="groupId">The group id</param>
+        /// <returns>The available categories</returns>
+        public Task<IEnumerable<Taxonomy>> GetAllCategoriesAsync(string groupId)
+        {
+            return _repo.GetAllCategories(groupId);
+        }
+
+        /// <summary>
+        /// Gets all available tags for the specified groupd.
+        /// </summary>
+        /// <param name="groupId">The group id</param>
+        /// <returns>The available tags</returns>
+        public Task<IEnumerable<Taxonomy>> GetAllTagsAsync(string groupId)
+        {
+            return _repo.GetAllTags(groupId);
+        }
+
+        /// <summary>
+        /// Gets the current translation status for the content model
+        /// with the given id.
+        /// </summary>
+        /// <param name="contentId">The unique content id</param>
+        /// <returns>The translation status</returns>
+        public Task<TranslationStatus> GetTranslationStatusByIdAsync(Guid contentId)
+        {
+            return _repo.GetTranslationStatusById(contentId);
+        }
+
+        /// <summary>
+        /// Gets the translation summary for the content group with
+        /// the given id.
+        /// </summary>
+        /// <param name="groupId">The group id</param>
+        /// <returns>The translation summary</returns>
+        public Task<TranslationSummary> GetTranslationStatusByGroupAsync(string groupId)
+        {
+            return _repo.GetTranslationStatusByGroup(groupId);
         }
 
         /// <summary>

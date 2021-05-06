@@ -46,6 +46,7 @@ piranha.postedit = new Vue({
             id: null,
             media: null
         },
+        isScheduled: false,
         selectedPermissions: [],
         saving: false,
         savingDraft: false,
@@ -89,7 +90,7 @@ piranha.postedit = new Vue({
                 description =  piranha.resources.texts.medium;
             else if (this.metaPriority <= 0.9)
                 description =  piranha.resources.texts.high;
-            
+
             return description += " (" + this.metaPriority + ")";
         }
     },
@@ -139,6 +140,7 @@ piranha.postedit = new Vue({
             this.routes = model.routes;
             this.permissions = model.permissions;
             this.primaryImage = model.primaryImage;
+            this.isScheduled = model.isScheduled;
             this.selectedPermissions = model.selectedPermissions;
 
             if (!this.useBlocks) {
@@ -289,7 +291,7 @@ piranha.postedit = new Vue({
                         });
                         $("#selectedTags").select2({
                             tags: true,
-                            selectOnClose: true,
+                            selectOnClose: false,
                             placeholder: piranha.resources.texts.addTags
                         });
                     });
@@ -390,7 +392,11 @@ piranha.postedit = new Vue({
             }
         },
         onExcerptBlur: function (e) {
-            this.excerpt = e.target.innerHTML;
+            if (this.useHtmlExcerpt) {
+                this.excerpt = tinyMCE.activeEditor.getContent();
+            } else {
+                this.excerpt = e.target.innerHTML;
+            }
         }
     },
     created: function () {
@@ -417,7 +423,7 @@ piranha.postedit = new Vue({
             });
             $("#selectedTags").select2({
                 tags: true,
-                selectOnClose: true,
+                selectOnClose: false,
                 placeholder: piranha.resources.texts.addTags
             });
             $("#selectedTags").on("change", function() {

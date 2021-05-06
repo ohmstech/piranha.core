@@ -52,6 +52,7 @@ piranha.pageedit = new Vue({
         },
         selectedPermissions: [],
         isCopy: false,
+        isScheduled: false,
         saving: false,
         savingDraft: false,
         selectedRegion: {
@@ -93,7 +94,7 @@ piranha.pageedit = new Vue({
                 description =  piranha.resources.texts.medium;
             else if (this.metaPriority <= 0.9)
                 description =  piranha.resources.texts.high;
-            
+
             return description += " (" + this.metaPriority + ")";
         }
     },
@@ -142,6 +143,7 @@ piranha.pageedit = new Vue({
             this.useExcerpt = model.useExcerpt;
             this.useHtmlExcerpt = model.useHtmlExcerpt;
             this.isCopy = model.isCopy;
+            this.isScheduled = model.isScheduled;
             this.selectedRoute = model.selectedRoute;
             this.routes = model.routes;
             this.permissions = model.permissions;
@@ -431,7 +433,11 @@ piranha.pageedit = new Vue({
             }
         },
         onExcerptBlur: function (e) {
-            this.excerpt = e.target.innerHTML;
+            if (this.useHtmlExcerpt) {
+                this.excerpt = tinyMCE.activeEditor.getContent();
+            } else {
+                this.excerpt = e.target.innerHTML;
+            }
         }
     },
     created: function () {

@@ -330,11 +330,11 @@ namespace Piranha.Repositories
         /// </summary>
         /// <param name="id">The comment id</param>
         /// <returns>The model</returns>
-        public Task<Models.Comment> GetCommentById(Guid id)
+        public async Task<Models.Comment> GetCommentById(Guid id)
         {
-            return _db.PostComments
+            return await _db.PostComments
                 .Where(c => c.Id == id)
-                .Select(c => new Models.Comment
+                .Select(c => new Models.PostComment
                 {
                     Id = c.Id,
                     ContentId = c.PostId,
@@ -345,7 +345,7 @@ namespace Piranha.Repositories
                     IsApproved = c.IsApproved,
                     Body = c.Body,
                     Created = c.Created
-                }).FirstOrDefaultAsync();
+                }).FirstOrDefaultAsync().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -458,7 +458,6 @@ namespace Piranha.Repositories
         {
             var model = await _db.Posts
                 .Include(p => p.Blocks).ThenInclude(b => b.Block).ThenInclude(b => b.Fields)
-                .Include(p => p.Fields)
                 .FirstOrDefaultAsync(p => p.Id == id)
                 .ConfigureAwait(false);
 
@@ -581,7 +580,7 @@ namespace Piranha.Repositories
 
             // Get the comments
             return await query
-                .Select(c => new Models.Comment
+                .Select(c => new Models.PostComment
                 {
                     Id = c.Id,
                     ContentId = c.PostId,
@@ -702,11 +701,15 @@ namespace Piranha.Repositories
                     postQuery = postQuery.AsNoTracking();
                 }
 
+                // FirstOrDefaultAsync(p => p.Id ...
+                postQuery = postQuery.OrderBy(p => p.Id);
+
                 var post = await postQuery
                     .Include(p => p.Permissions)
                     .Include(p => p.Blocks).ThenInclude(b => b.Block).ThenInclude(b => b.Fields)
                     .Include(p => p.Fields)
                     .Include(p => p.Tags).ThenInclude(t => t.Tag)
+                    .AsSplitQuery()
                     .FirstOrDefaultAsync(p => p.Id == model.Id)
                     .ConfigureAwait(false);
 
@@ -1044,7 +1047,10 @@ namespace Piranha.Repositories
                     .Include(p => p.Blocks).ThenInclude(b => b.Block).ThenInclude(b => b.Fields)
                     .Include(p => p.Fields);
             }
-            return query;
+
+            query = query.OrderBy(p => p.Created);
+
+            return query.AsSplitQuery();
         }
 
         /// <summary>
